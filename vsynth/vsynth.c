@@ -5,7 +5,11 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <lv2/atom/atom.h>
+#include <lv2/urid/urid.h>
+#include <lv2/midi/midi.h>
+#include <lv2/core/lv2_util.h>
+#include <lv2/atom/util.h>
 
 
 
@@ -15,7 +19,11 @@ typedef struct
         float* output;
         float* level;
         float* freq;
-
+        const LV2_Atom_Sequence* midi;
+        const float* attack;
+        const float* delay;
+        const float* sustain;
+        const float* release;
         double rate;
         double pos; 
 } osc;
