@@ -1,5 +1,5 @@
 Work in progress.
 
-Adding basic LV2 plugins to use to create sofware.
+Adding basic LV2 plugins to use to create music
 
-vsynth: a midi controlled sound generator with synthesizer-like features
+1st plugin : vsynth, a midi controlled sound generator with synthesizer-like features

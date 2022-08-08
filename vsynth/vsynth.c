@@ -20,10 +20,6 @@ typedef struct
         float* level;
         float* freq;
         const LV2_Atom_Sequence* midi;
-        const float* attack;
-        const float* delay;
-        const float* sustain;
-        const float* release;
         double rate;
         double pos; 
 } osc;
@@ -37,7 +33,7 @@ static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double s
         m->pos = 0.0;
         return m;
 }
-
+// note: for ports
 static void connect_port (LV2_Handle instance, uint32_t port, void *data_location)
 {
         osc* m = (osc*)instance;
