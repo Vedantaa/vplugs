@@ -1,4 +1,4 @@
-#define OSC_URI "http://lv2plug.in/plugins/oscillator"
+#define OSC_URI "http://lv2plug.in/plugins/synillator"
 
 /* includes */
 #include "lv2/core/lv2.h"
@@ -13,7 +13,7 @@
 
 
 
-/* def oscillator */
+/* def synillator */
 typedef struct
 {
         float* output;
@@ -22,13 +22,13 @@ typedef struct
         const LV2_Atom_Sequence* midi;
         double rate;
         double pos; 
-} osc;
+} syn;
 
 
 /* LV2 methods */
 static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double sample_rate, const char *bundle_path, const LV2_Feature *const *features)
 {
-        osc* m = (osc*)calloc(1, sizeof(osc));
+        syn* m = (syn*)calloc(1, sizeof(syn));
         m->rate = sample_rate;
         m->pos = 0.0;
         return m;
@@ -36,7 +36,7 @@ static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double s
 // note: for ports
 static void connect_port (LV2_Handle instance, uint32_t port, void *data_location)
 {
-        osc* m = (osc*)instance;
+        syn* m = (syn*)instance;
         if(!m) return;
         
         switch(port) 
@@ -67,7 +67,7 @@ static void activate (LV2_Handle instance)
 
 static void run (LV2_Handle instance, uint32_t sample_count)
 {
-        osc* m = (osc*)instance;
+        syn* m = (syn*)instance;
         if (!m) return;
         /*check that all "connected ports" are not null pointers*/
         if ((!m->output) || (!m->level) || (!m->freq)) return;
@@ -92,7 +92,7 @@ static const void* extension_data (const char *uri)
 {      
        return NULL; 
 }      
-static LV2_Descriptor descriptor = {"https://github.com/Vedantaa/messrepo/osctest",
+static LV2_Descriptor descriptor = {"https://github.com/Vedantaa/messrepo/syntest",
                                           instantiate,
                                           connect_port,
                                           activate,
