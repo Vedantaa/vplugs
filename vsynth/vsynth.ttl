@@ -45,7 +45,6 @@
                  lv2:index 2 ;
                  lv2:symbol "audio_out" ;
                  lv2:name "Audio out" ;
-                ] ,
-.
+                ] .
 
 
