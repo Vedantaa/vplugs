@@ -23,7 +23,7 @@
         lv2:port
                 [
                  a lv2:InputPort , atom:AtomPort ; 
-                 atom:BufferType atom:Sequence ;
+                 atom:bufferType atom:Sequence ;
                  atom:supports midi:MidiEvent ;
                  lv2:index 0 ;
                  lv2:symbol "midi_in" ;
@@ -41,7 +41,7 @@
                 ] , 
                 
                 [
-                 a lv2:InputPort , lv2:AudioPort ; 
+                 a lv2:OutputPort , lv2:AudioPort ; 
                  lv2:index 2 ;
                  lv2:symbol "audio_out" ;
                  lv2:name "Audio out" ;

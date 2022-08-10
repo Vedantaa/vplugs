@@ -26,8 +26,11 @@ typedef struct
         LV2_URID_Map*  map;
         struct {
                     LV2_URID midi_MidiEvent;
-                  } uris;
-
+                  } urids;
+        
+       double freq;
+       uint8_t note;
+       uint8_t vel;
 } syn;
 
 
@@ -40,10 +43,12 @@ static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double s
 {
         syn* m = (syn*)calloc(1, sizeof(syn));
         m->rate = sample_rate;
-        LV2_Atom_Sequence* m->midi_in = NULL;
+        m->midi_in = NULL;
         m->pos = 0.0;
-        m->uris.midi_MidiEvent =
-                m->map->map(self->map->handle, LV2_MIDI__MidiEvent);
+        m->urids.midi_MidiEvent =
+                m->map->map(m->map->handle, LV2_MIDI__MidiEvent);
+        
+
         return m;
 }
 
@@ -73,10 +78,26 @@ static void connect_port (LV2_Handle instance, uint32_t port, void *data)
 
         }
 
-}
+       }
 static void activate (LV2_Handle instance)
 {
 //not needed
+}
+
+
+//create functions for midi handling here
+void press(const uint8_t note, const uint8_t vel, syn* m)
+{
+     m->note = note;
+     m->vel = vel;
+     m->freq = (pow (2.0, ((double)(note) - 69.0) / 12.0) * 440.0);
+}
+
+void release(const uint8_t note, const uint8_t vel, syn* m)
+{
+        
+     m->note = note;
+     m->vel = vel;
 }
 
 
@@ -86,13 +107,46 @@ static void run (LV2_Handle instance, uint32_t sample_count)
         if (!m) return;
         /*check that all "connected ports" are not null pointers*/
         if ((!m->midi_in) || (!m->level) || (!m->output)) return;
+        //midi handling 
+        LV2_ATOM_SEQUENCE_FOREACH (m->midi_in, ev)
+        {
+        const uint32_t frame = ev->time.frames;
+              // if(ev->body.type == m->urids.midi_MidiEvent) // check for midi-likness. URIDS used here
+                {
+                       const uint8_t* const msg = (const uint8_t*)(ev + 1); //check atom adress for midi info
 
-        /*generation of sound with midi */
+                       switch (lv2_midi_message_type(msg)) // use info in atom
+                        {
+                                case LV2_MIDI_MSG_NOTE_ON:
+                                        press(msg[1], msg[2], m);
+                                        break;
+
+
+                                case LV2_MIDI_MSG_NOTE_OFF:
+                                        release(msg[1], msg[2], m); 
+                                        break;
+                        }
+
+                }
+
+
+        }
+       for (uint32_t i = 0; i < sample_count; ++i)
+         {
+          m->output[i] =  sin (2.0 * M_PI * m->pos) * (m->vel / 127.0f); *m->level;
+          m->pos += m->freq / m->rate;
+         }
+
+        /* commented out, but acts as a reference
+         
+         
         for(uint32_t i = 0; i<sample_count; i++)
         {
                m->output[i] = sin(2.0 * M_PI * m->pos) * *m->level;
                m->pos += *m->freq / m->rate;
         }
+
+         */
 
 }
 static void deactivate (LV2_Handle instance)
