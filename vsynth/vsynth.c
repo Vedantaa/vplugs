@@ -22,7 +22,6 @@
 typedef struct 
 {
 	const LV2_Atom_Sequence* midi_in;
-	float* level;
 	LV2_URID_Map*  map;
 	LV2_Log_Logger logger;
 	struct {
@@ -36,7 +35,7 @@ typedef struct
 	unsigned int state;
 	
 	//midi properties, could create own key structure.
-	double* freq;
+	double freq;
 	double vel;
 } syn;
 
@@ -87,11 +86,7 @@ static void connect_port (LV2_Handle instance, uint32_t port, void *data)
 				m->midi_in = (LV2_Atom_Sequence*)data;
                 break;
 
-        case 1:  
-                m->level = (float*)data;
-                break;
-
-        case 2: 
+        case 1: 
                 m->output = (float*)data;
                 break;
 
@@ -111,8 +106,8 @@ static void write_out(syn* instance, uint32_t start, uint32_t end)
 {
 	for (uint32_t i = start; i < end; i++)
 	{
-		instance->output[i] = sin (2.0 * M_PI * instance->pos) * instance->vel * *(instance->level);
-        instance->pos += *instance->freq/instance->rate;
+		instance->output[i] = sin (2.0 * M_PI * instance->pos) * instance->vel;
+        instance->pos += instance->freq/instance->rate;
 	}
 }
 
@@ -120,7 +115,7 @@ static void run (LV2_Handle instance, uint32_t sample_count)
 {
 	syn* m = (syn*)instance;
 	
-	if ((!m->midi_in) || (!m->level) || (!m->output)) return;
+	if ((!m->midi_in) || (!m->output)) return;
 	
 	
 	uint32_t last_frame = 0;
@@ -148,7 +143,7 @@ static void run (LV2_Handle instance, uint32_t sample_count)
 				case LV2_MIDI_MSG_NOTE_ON:
 					//press key and take msg[1] note and msg[2] velocity
 					m->state = 1;
-					*m->freq = pow (2.0, ((double)msg[1] - 69.0)/12) * 440.0;
+					m->freq = pow (2.0, ((double)msg[1] - 69.0)/12) * 440.0;
 					m->vel = msg[2];
 					
 					
