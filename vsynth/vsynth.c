@@ -13,12 +13,13 @@
 #include <lv2/midi/midi.h>
 #include "lv2/log/log.h"
 #include "lv2/log/logger.h"
+#include <fftw.h>
 
 
 
 
 
-//
+//buffers for ports
 typedef struct 
 {
 	const LV2_Atom_Sequence* midi_in;
@@ -27,19 +28,27 @@ typedef struct
 	struct {
 			LV2_URID midi_MidiEvent;
 			} urids;
-
+			
+	const float* level;
+	const float* fLevel;
 	float* output;
-	double rate;
-	double pos;
-	//state 1=on, 0=off for key press
-	unsigned int state;
 	
-	//midi properties, could create own key structure.
-	double freq;
-	double vel;
+	
+
 } syn;
 
 
+	//variables to be used in sound generation
+	double rate;
+	double pos1;
+	double pos2;
+	double freq1;
+	double freq2;
+	//state 1=on, 0=off for key press
+	unsigned int state;
+	//midi properties, could create own key structure.
+	double vel;
+	double mod;
 
 
 static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double sample_rate, const char *bundle_path, const LV2_Feature *const *features)
@@ -51,13 +60,13 @@ static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double s
 		LV2_LOG__log,  &m->logger.log, false,
 		LV2_URID__map, &m->map,        true,
 		NULL);
-		// clang-format on
+		
 
 		lv2_log_logger_set_map(&m->logger, m->map);
 		if (missing) {
-		lv2_log_error(&m->logger, "Missing feature <%s>\n", missing);
-		free(m);
-		return NULL;
+			lv2_log_error(&m->logger, "Missing feature <%s>\n", missing);
+			free(m);
+			return NULL;
 	}
 		
 		//map midi uris in syn structure m
@@ -66,15 +75,22 @@ static LV2_Handle instantiate (const struct LV2_Descriptor *descriptor, double s
 		
 		
 		
-		m->state = 0;
-		m->vel = 0.0;
-		m->rate = sample_rate;
-		m->pos = 0.0;
+		state = 0;
+		vel = 0.0;
+		rate = sample_rate;
+		pos1 = 0.0;
+		pos2 = 0.0;
         return (LV2_Handle)m;
 }
 
 
-// note: for ports, 0-midi, 1-level, 2-out, enumerate when more ports 
+enum {
+		MIDI_IN = 0,
+		SYN_OUT = 1,
+		CTR_LEV = 2,
+		CTR_FFT = 3
+	 };
+
 static void connect_port (LV2_Handle instance, uint32_t port, void *data)
 {
         syn* m = (syn*)instance;
@@ -82,13 +98,21 @@ static void connect_port (LV2_Handle instance, uint32_t port, void *data)
         
         switch(port) 
         {
-        case 0:
+        case MIDI_IN:
 				m->midi_in = (LV2_Atom_Sequence*)data;
                 break;
 
-        case 1: 
+        case SYN_OUT: 
                 m->output = (float*)data;
                 break;
+				
+        case CTR_LEV: 
+                m->level = (float*)data;
+                break;
+
+        case CTR_FFT: 
+                m->fLevel = (float*)data;
+                break;				
 
         default: 
                 break;
@@ -101,13 +125,24 @@ static void activate (LV2_Handle instance)
 }
 
 
+
 //function for writing data into m->out.
 static void write_out(syn* instance, uint32_t start, uint32_t end)
 {
+	syn* m = (syn*)instance;
+	
 	for (uint32_t i = start; i < end; i++)
 	{
-		instance->output[i] = sin (2.0 * M_PI * instance->pos) * instance->vel;
-        instance->pos += instance->freq/instance->rate;
+		freq2 = (double)*m->fLevel;
+		mod 				= sin (2.0 * M_PI * pos2); // make amplitude controllable
+		m->output[i] = sin (2.0 * M_PI * pos1 + mod) * vel * *m->level;
+        pos1 += freq1/rate;
+		pos2 += freq2/rate;
+	}
+	if(state == 0)
+	{
+		pos1 = 0;
+		pos2 = 0;
 	}
 }
 
@@ -142,9 +177,12 @@ static void run (LV2_Handle instance, uint32_t sample_count)
 			{
 				case LV2_MIDI_MSG_NOTE_ON:
 					//press key and take msg[1] note and msg[2] velocity
-					m->state = 1;
-					m->freq = pow (2.0, ((double)msg[1] - 69.0)/12) * 440.0;
-					m->vel = msg[2];
+					state = 1;
+					
+					//take frequency of midi 
+					freq1 = pow (2.0, ((double)msg[1] - 69.0)/12) * 440.0;
+					//take velocity
+					vel = msg[2];
 					
 					
 					break;
@@ -152,26 +190,23 @@ static void run (LV2_Handle instance, uint32_t sample_count)
 				case LV2_MIDI_MSG_NOTE_OFF:
 					//release pressed key
 					
-					if(m->state == 1) {
-					m->state = 0;
-					m->pos = 0;
+					if(state == 1) {
+					state = 0;
+					pos1 = 0;
 					
 					}
 					break;
 					
 				case LV2_MIDI_MSG_CONTROLLER:
 					
-					if (msg[1] == LV2_MIDI_CTL_ALL_NOTES_OFF) m->state = 0;
-					else if (msg[1] == LV2_MIDI_CTL_ALL_SOUNDS_OFF) m->state = 0;
+					if (msg[1] == LV2_MIDI_CTL_ALL_NOTES_OFF) state = 0;
+					else if (msg[1] == LV2_MIDI_CTL_ALL_SOUNDS_OFF) state = 0;
 					
 					break;
 				
-				
 			}
-
 		}
 	}
-	
 	write_out (m, last_frame, sample_count); //play last frames
 }
 

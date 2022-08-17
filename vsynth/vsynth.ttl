@@ -42,7 +42,7 @@
                  lv2:index 2 ;
                  lv2:symbol "level" ;
                  lv2:name "Level" ;
-                 lv2:default 0.1 ;
+                 lv2:default 0.4 ;
                  lv2:minimum 0.0 ;
                  lv2:maximum 1.0 ;
                 ] ,
@@ -53,7 +53,7 @@
                  lv2:symbol "level" ;
                  lv2:name "fLevel" ;
                  lv2:default 200.0 ;
-                 lv2:minimum 100.0 ;
+                 lv2:minimum 0.0 ;
                  lv2:maximum 1000.0 ;
                 ] .
 
