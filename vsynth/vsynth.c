@@ -137,7 +137,7 @@ static void write_out(syn* instance, uint32_t start, uint32_t end)
 		mod 				= sin (2.0 * M_PI * pos2); // make amplitude controllable
 		m->output[i] = sin (2.0 * M_PI * pos1 + mod) * vel * *m->level;
         pos1 += freq1/rate;
-		pos2 += freq2/rate;
+		
 	}
 	if(state == 0)
 	{
